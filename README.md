@@ -37,7 +37,8 @@ Mô tả ngắn gọn: Hệ thống hỗ trợ điểm danh nhân viên/sinh vi�
 
 ## IV. Thành viên nhóm
 
-| Họ tên | MSSV | Vai trò | GitHub |
-| :--- | :--- | :--- | :--- |
-| Nguyễn Văn A | 24100543 | Trưởng nhóm / Python Lead | [@AccountA](https://github.com) |
-| Trần Thị B | 24100230 | Lập trình CSDL & UI | [@AccountB](https://github.com) |
+| STT | Họ và tên | MSSV | Vai trò | Phân Công | GitHub |
+| :---: | :--- | :---: | :--- | :--- | :--- |
+| 1 | **Võ Huy Nguyên Chuẩn** | 24108063 | Trưởng Nhóm | Lập trình xử lý hình ảnh (Python Lead) | [...] |
+| 2 | **Vũ Việt Dũng** | 24107630 | Thành Viên | Lập trình CSDL & Tích hợp hệ thống | [...] |
+| 3 | **Vũ Tiến Đạt** | 24108659 | Thành Viên | Xây dựng giao diện & Báo cáo | [...] |
