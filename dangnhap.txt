@@ -1,0 +1,5 @@
+Quản trị viên (Admin):
+admin-admin123
+
+Quản lý (Manager):
+manager-manager123
