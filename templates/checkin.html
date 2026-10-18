@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Kiosk Chấm Công AI - Liveness Detection</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body class="kiosk-body-mobile">
+    <header class="kiosk-header-mobile">
+        <div style="display: flex; align-items: center; gap: 8px;">
+            <div class="brand-icon" style="width: 30px; height: 30px; font-size: 0.85rem;"><i class="fa-solid fa-camera"></i></div>
+            <span style="font-weight: 700; font-size: 0.95rem;">FACEX SMART KIOSK</span>
+        </div>
+        <div id="liveClock" style="font-family: monospace; font-size: 1rem; color: #38bdf8; font-weight: 600;">00:00:00</div>
+        {% if role == 'staff' %}
+        <a href="/logout" class="btn btn-danger" style="padding: 0.35rem 0.75rem; font-size: 0.8rem;"><i class="fa-solid fa-power-off"></i> Thoát</a>
+        {% else %}
+        <a href="/" class="btn btn-secondary" style="padding: 0.35rem 0.75rem; font-size: 0.8rem;"><i class="fa-solid fa-arrow-left"></i> Về Portal</a>
+        {% endif %}
+    </header>
+
+    <div class="kiosk-content-mobile">
+        <!-- Chuyển đổi Loại Chấm Công -->
+        <div class="check-type-selector">
+            <button type="button" class="type-btn active" id="btnCheckIn" onclick="setCheckType('Chấm công Vào')">
+                <i class="fa-solid fa-right-to-bracket"></i> Chấm Vào
+            </button>
+            <button type="button" class="type-btn" id="btnCheckOut" onclick="setCheckType('Chấm công Ra')">
+                <i class="fa-solid fa-right-from-bracket"></i> Chấm Ra
+            </button>
+        </div>
+
+        <!-- Khung Hướng Dẫn Thử Thách Người Thật (Liveness HUD) -->
+        <div class="liveness-hud-box" id="livenessHud">
+            <div class="liveness-badge">
+                <span class="liveness-dot" id="livenessDot"></span>
+                <span id="livenessBadgeText">XÁC MINH NGƯỜI THẬT (LIVENESS AI)</span>
+            </div>
+            <div class="challenge-display">
+                <div class="challenge-icon-wrap" id="challengeIconWrap">
+                    <i class="fa-solid fa-shield-halved" id="challengeIcon"></i>
+                </div>
+                <div class="challenge-info">
+                    <div class="challenge-title" id="challengeTitle">Sẵn sàng nhận diện</div>
+                    <div class="challenge-desc" id="challengeDesc">Đứng thẳng trước camera để bắt đầu thử thách</div>
+                </div>
+            </div>
+            <div class="liveness-progress-container" id="livenessProgressWrap" style="display: none;">
+                <div class="liveness-progress-bar" id="livenessProgressBar"></div>
+            </div>
+        </div>
+
+        <!-- Khung Nhận Diện Camera Responsive -->
+        <div class="camera-responsive-box" id="cameraBox">
+            <video id="webcam" autoplay playsinline muted></video>
+            <canvas id="snapshotCanvas" style="display: none;"></canvas>
+            
+            <div class="face-reticle-enterprise">
+                <div class="reticle-corner tl"></div>
+                <div class="reticle-corner tr"></div>
+                <div class="reticle-corner bl"></div>
+                <div class="reticle-corner br"></div>
+            </div>
+            
+            <div class="scanning-bar"></div>
+        </div>
+
+        <!-- Thẻ Kết Quả Nổi Bật Ngay Trên Màn Hình -->
+        <div id="resultModal" class="result-banner" style="display: none;">
+            <div class="res-status-icon" id="resIcon"><i class="fa-solid fa-circle-check"></i></div>
+            <div class="res-details">
+                <h3 id="resName">Nguyễn Văn A</h3>
+                <p id="resTimeType">07:58:32 — Chấm công vào</p>
+                <div style="display: flex; gap: 8px; align-items: center; margin-top: 4px; flex-wrap: wrap;">
+                    <span id="resStatusBadge" class="pill pill-success">Đúng giờ</span>
+                    <span id="resConfidence" class="confidence-tag">Confidence 96.8%</span>
+                    <span id="resLivenessBadge" class="pill pill-success"><i class="fa-solid fa-circle-check"></i> Liveness Passed</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Nút Chụp & Điều Khiển -->
+        <div class="kiosk-action-footer">
+            <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 0.5rem;">
+                <span style="font-size: 0.8rem; color: #94a3b8;">Tự động nhận diện (Face ID + Liveness)</span>
+                <input type="checkbox" id="autoCheckin" checked style="accent-color: #2563eb; width: 18px; height: 18px;">
+            </div>
+            <button type="button" id="captureBtn" class="btn btn-primary" style="width: 100%; padding: 0.85rem; justify-content: center; font-size: 1rem;">
+                <i class="fa-solid fa-shield-virus"></i> Bắt Đầu Xác Thực & Điểm Danh
+            </button>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

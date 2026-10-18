@@ -1,0 +1,226 @@
+{% extends "base.html" %}
+{% block title %}Quản Lý Hồ Sơ Nhân Viên - FaceCheckIn{% endblock %}
+
+{% block content %}
+<header class="page-header">
+    <div>
+        <h1 class="page-title">Hồ Sơ &amp; Dữ Liệu Nhân Sự</h1>
+        <p class="page-desc">Thiết lập nhân viên, đồng bộ khuôn mặt Face ID và phân bổ quyền hạn</p>
+    </div>
+    <button class="btn btn-primary" onclick="openCreateModal()"><i class="fa-solid fa-user-plus"></i> Thêm Nhân Viên Mới</button>
+</header>
+
+<!-- Bảng Danh Sách Nhân Viên -->
+<div class="panel">
+    <div class="panel-head">
+        <span class="panel-title"><i class="fa-solid fa-users"></i> Danh Sách Nhân Sự Hệ Thống</span>
+    </div>
+    <div class="table-responsive">
+        <table class="table-custom">
+            <thead>
+                <tr>
+                    <th>Hồ Sơ Nhân Viên</th>
+                    <th>Mã NV</th>
+                    <th>Phòng Ban</th>
+                    <th>Ca Làm</th>
+                    <th>Face ID</th>
+                    <th>Trạng Thái</th>
+                    <th style="text-align: right;">Hành Động</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for e in employees %}
+                <tr>
+                    <td>
+                        <div class="employee-cell">
+                            {% if e.avatar_path %}
+                            <img src="{{ url_for('static', filename=e.avatar_path) }}" class="avatar-img" alt="avatar">
+                            {% else %}
+                            <div class="avatar-placeholder"><i class="fa-solid fa-user"></i></div>
+                            {% endif %}
+                            <div>
+                                <span style="font-weight: 700; display: block;">{{ e.full_name }}</span>
+                                <small style="color: var(--text-muted);">{{ e.email or 'Chưa có email' }} • {{ e.phone or 'Chưa có SĐT' }}</small>
+                            </div>
+                        </div>
+                    </td>
+                    <td style="font-family: monospace; font-weight: 700; color: var(--accent);">{{ e.emp_code }}</td>
+                    <td>{{ e.dept_name or 'Chưa gán' }}</td>
+                    <td>{{ e.shift_name or 'Ca Mặc Định' }}</td>
+                    <td>
+                        {% if e.face_registered %}
+                        <span class="pill pill-success"><i class="fa-solid fa-check"></i> Đã đăng ký</span>
+                        {% else %}
+                        <span class="pill pill-danger"><i class="fa-solid fa-xmark"></i> Chưa đăng ký</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if e.locked_until %}
+                        <span class="pill pill-danger">Đang bị khóa</span>
+                        {% else %}
+                        <span class="pill pill-success">{{ e.status }}</span>
+                        {% endif %}
+                    </td>
+                    <td style="text-align: right;">
+                        <button type="button" class="btn btn-secondary" data-id="{{ e.id }}" onclick="toggleLock(this)" title="Khóa/Mở khóa">
+                            <i class="fa-solid fa-lock{% if e.locked_until %}-open{% endif %}"></i>
+                        </button>
+                        {% if role == 'admin' %}
+                        <button type="button" class="btn btn-danger" data-id="{{ e.id }}" onclick="deleteEmp(this)" title="Xóa nhân viên">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 3rem;">Chưa có dữ liệu nhân sự.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal Thêm Nhân Viên & Quét Mặt 3 Giây -->
+<div id="createModal" class="modal-backdrop" style="display: none;">
+    <div class="modal-box">
+        <div class="modal-head">
+            <h3>Thêm Hồ Sơ Nhân Viên Mới</h3>
+            <button type="button" class="btn btn-subtle" onclick="closeCreateModal()">&times;</button>
+        </div>
+        <form method="POST" action="/admin/employees" id="employeeForm">
+            <input type="hidden" name="action_type" value="create">
+            <input type="hidden" name="avatar_base64" id="avatarBase64">
+
+            <div class="form-grid-2">
+                <div class="form-group">
+                    <label>Mã Nhân Viên (Chỉ số) <span class="required">*</span></label>
+                    <input type="text" name="emp_code" class="form-control font-mono" required pattern="[0-9]+" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
+                </div>
+                <div class="form-group">
+                    <label>Họ và Tên <span class="required">*</span></label>
+                    <input type="text" name="full_name" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" name="email" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label>Số Điện Thoại</label>
+                    <input type="text" name="phone" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label>Phòng Ban</label>
+                    <select name="department_id" class="form-control">
+                        {% for d in departments %}<option value="{{ d.id }}">{{ d.name }}</option>{% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Ca Làm Việc</label>
+                    <select name="shift_id" class="form-control">
+                        {% for s in shifts %}<option value="{{ s.id }}">{{ s.name }} ({{ s.start_time }} - {{ s.end_time }})</option>{% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Phân Quyền Hệ Thống</label>
+                    <select name="role" class="form-control">
+                        <option value="staff">Nhân viên (Staff)</option>
+                        <option value="manager">Quản lý (Manager)</option>
+                        {% if role == 'admin' %}<option value="admin">Quản trị viên (Admin)</option>{% endif %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Mật Khẩu Mặc Định</label>
+                    <input type="password" name="password" class="form-control" value="123456" minlength="6" required>
+                </div>
+            </div>
+
+            <!-- Quét Khuôn Mặt 3 Giây Trực Tiếp -->
+            <div style="background: #0f172a; padding: 1rem; border-radius: 10px; margin-bottom: 1.5rem;">
+                <label style="color: #38bdf8; font-weight: 600; display: block; margin-bottom: 0.5rem;">
+                    <i class="fa-solid fa-camera"></i> Đăng Ký Khuôn Mặt Face ID (Giữ 3s)
+                </label>
+                <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+                    <div style="width: 200px; height: 150px; background: #000; border-radius: 8px; overflow: hidden; position: relative;">
+                        <video id="regVideo" autoplay playsinline style="width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1);"></video>
+                        <canvas id="regCanvas" style="display: none;"></canvas>
+                        <div id="cdNumber" style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); color: #38bdf8; font-size: 2.5rem; font-weight: 800; align-items: center; justify-content: center;">3</div>
+                    </div>
+                    <div>
+                        <button type="button" class="btn btn-secondary" id="btnScanFace" onclick="startEnrollment()"><i class="fa-solid fa-expand"></i> Quét Mặt 3 Giây</button>
+                        <p id="faceNotice" style="color: #94a3b8; font-size: 0.75rem; margin-top: 6px;">Chưa nạp dữ liệu Face ID</p>
+                    </div>
+                </div>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                <button type="button" class="btn btn-secondary" onclick="closeCreateModal()">Hủy</button>
+                <button type="submit" class="btn btn-primary">Lưu Hồ Sơ</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function openCreateModal() {
+        document.getElementById('createModal').style.display = 'flex';
+        navigator.mediaDevices.getUserMedia({ video: true }).then(stream => {
+            document.getElementById('regVideo').srcObject = stream;
+        }).catch(e => console.warn(e));
+    }
+
+    function closeCreateModal() {
+        document.getElementById('createModal').style.display = 'none';
+        const stream = document.getElementById('regVideo').srcObject;
+        if (stream) stream.getTracks().forEach(t => t.stop());
+    }
+
+    function startEnrollment() {
+        let count = 3;
+        const cd = document.getElementById('cdNumber');
+        cd.style.display = 'flex';
+        cd.innerText = count;
+
+        const timer = setInterval(() => {
+            count--;
+            if (count > 0) {
+                cd.innerText = count;
+            } else {
+                clearInterval(timer);
+                cd.style.display = 'none';
+
+                const v = document.getElementById('regVideo');
+                const c = document.getElementById('regCanvas');
+                c.width = v.videoWidth;
+                c.height = v.videoHeight;
+                const ctx = c.getContext('2d');
+                ctx.translate(c.width, 0); ctx.scale(-1, 1);
+                ctx.drawImage(v, 0, 0, c.width, c.height);
+
+                const data = c.toDataURL('image/jpeg', 0.9);
+                document.getElementById('avatarBase64').value = data;
+                document.getElementById('faceNotice').innerHTML = '<span style="color: #10b981; font-weight: bold;"><i class="fa-solid fa-check"></i> Đã đồng bộ Face ID!</span>';
+            }
+        }, 1000);
+    }
+
+    async function toggleLock(btn) {
+        const id = btn.getAttribute('data-id');
+        const res = await fetch(`/admin/employees/toggle-lock/${id}`, { method: 'POST' });
+        const d = await res.json();
+        Swal.fire({ icon: 'info', title: 'Thông báo', text: d.message, timer: 1500 });
+        setTimeout(() => location.reload(), 1500);
+    }
+
+    async function deleteEmp(btn) {
+        const id = btn.getAttribute('data-id');
+        if (confirm("Bạn có chắc chắn muốn xóa nhân sự này vĩnh viễn?")) {
+            const res = await fetch(`/admin/employees/delete/${id}`, { method: 'POST' });
+            const d = await res.json();
+            Swal.fire({ icon: 'success', title: 'Đã xóa', text: d.message, timer: 1500 });
+            setTimeout(() => location.reload(), 1500);
+        }
+    }
+</script>
+{% endblock %}

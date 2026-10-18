@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Quản Lý Ca Làm Việc - FaceCheckIn{% endblock %}
+{% block content %}
+<header class="page-header">
+    <div>
+        <h1 class="page-title">Cấu Hình Ca Làm Việc</h1>
+        <p class="page-desc">Thiết lập khung giờ bắt đầu, kết thúc và thời gian cho phép đi muộn (Grace Period)</p>
+    </div>
+</header>
+
+<div class="panel">
+    <div class="panel-head"><span class="panel-title">Thiết Lập Ca Mới</span></div>
+    <div class="panel-body">
+        <form method="POST" action="/admin/shifts" class="filter-grid">
+            <div class="form-group"><label>Tên Ca</label><input type="text" name="name" class="form-control" placeholder="Ca Sáng" required></div>
+            <div class="form-group"><label>Giờ Bắt Đầu</label><input type="time" name="start_time" class="form-control" value="08:00" required></div>
+            <div class="form-group"><label>Giờ Kết Thúc</label><input type="time" name="end_time" class="form-control" value="12:00" required></div>
+            <div class="form-group"><label>Phút Cho Phép Trễ</label><input type="number" name="late_grace_minutes" class="form-control" value="15" required></div>
+            <div class="form-group" style="align-self: flex-end;"><button type="submit" class="btn btn-primary" style="width: 100%;">Lưu Ca</button></div>
+        </form>
+    </div>
+</div>
+
+<div class="panel">
+    <table class="table-custom">
+        <thead><tr><th>Tên Ca</th><th>Giờ Bắt Đầu</th><th>Giờ Kết Thúc</th><th>Thời Gian Ân Hạn Đi Muộn</th></tr></thead>
+        <tbody>
+            {% for s in shifts %}
+            <tr><td><strong>{{ s.name }}</strong></td><td>{{ s.start_time }}</td><td>{{ s.end_time }}</td><td>{{ s.late_grace_minutes }} phút</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

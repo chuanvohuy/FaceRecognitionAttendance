@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% block title %}Cảnh Báo Bất Thường &amp; Phân Tích Chuyên Cần - FaceCheckIn{% endblock %}
+
+{% block content %}
+<header class="page-header">
+    <div>
+        <h1 class="page-title">Trung Tâm Phân Tích Chuyên Cần &amp; Cảnh Báo Bất Thường</h1>
+        <p class="page-desc">Tự động phát hiện đi muộn bất thường, quên chấm công và vi phạm quy chuẩn điểm danh tháng {{ current_month }}</p>
+    </div>
+</header>
+
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.25rem; margin-bottom: 2rem;">
+    <div class="panel" style="margin-bottom: 0;">
+        <div class="panel-head" style="border-top: 3px solid var(--warning);">
+            <span class="panel-title" style="color: #b45309;"><i class="fa-solid fa-clock-rotate-left"></i> Đi Muộn Nhiều Lần (&ge; 3 lần)</span>
+        </div>
+        <div class="panel-body">
+            {% for f in frequent_lates %}
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.6rem 0; border-bottom: 1px solid var(--border-subtle);">
+                <div>
+                    <strong>{{ f.full_name }}</strong> ({{ f.emp_code }})<br>
+                    <small style="color: var(--text-muted);">{{ f.dept_name or 'N/A' }}</small>
+                </div>
+                <span class="pill pill-danger">{{ f.late_times }} lần muộn</span>
+            </div>
+            {% else %}
+            <p style="color: var(--text-muted); text-align: center; padding: 1.5rem 0;">Không có nhân sự đi muộn quá 3 lần tháng này.</p>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="panel" style="margin-bottom: 0;">
+        <div class="panel-head" style="border-top: 3px solid #ec4899;">
+            <span class="panel-title" style="color: #be185d;"><i class="fa-solid fa-arrow-right-from-bracket"></i> Quên Chấm Công Ra</span>
+        </div>
+        <div class="panel-body">
+            {% for m in missing_checkouts %}
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.6rem 0; border-bottom: 1px solid var(--border-subtle);">
+                <div>
+                    <strong>{{ m.full_name }}</strong> ({{ m.emp_code }})<br>
+                    <small style="color: var(--text-muted);">Ngày: {{ m.check_date }} • Vào lúc: {{ m.checkin_time[11:16] }}</small>
+                </div>
+                <span class="pill pill-warning">Thiếu giờ ra</span>
+            </div>
+            {% else %}
+            <p style="color: var(--text-muted); text-align: center; padding: 1.5rem 0;">Không phát hiện lượt quên chấm công ra.</p>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="panel" style="margin-bottom: 0;">
+        <div class="panel-head" style="border-top: 3px solid var(--danger);">
+            <span class="panel-title" style="color: var(--danger);"><i class="fa-solid fa-triangle-exclamation"></i> Cờ Bất Thường &amp; Liveness</span>
+        </div>
+        <div class="panel-body">
+            {% for a in flagged_anomalies %}
+            <div style="padding: 0.6rem 0; border-bottom: 1px solid var(--border-subtle);">
+                <div style="display: flex; justify-content: space-between;">
+                    <strong>{{ a.emp_name }}</strong> ({{ a.emp_code }})
+                    <small style="color: var(--text-muted);">{{ a.check_date }}</small>
+                </div>
+                <small style="color: var(--danger); display: block; margin-top: 2px;">{{ a.anomaly_reason or a.liveness_status }}</small>
+            </div>
+            {% else %}
+            <p style="color: var(--text-muted); text-align: center; padding: 1.5rem 0;">Không có sự kiện bất thường được gắn cờ.</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<div class="panel">
+    <div class="panel-head">
+        <span class="panel-title"><i class="fa-solid fa-chart-pie"></i> Thống Kê Tỉ Lệ Đúng Giờ Theo Phòng Ban</span>
+    </div>
+    <div class="table-responsive">
+        <table class="table-custom">
+            <thead>
+                <tr>
+                    <th>Phòng Ban</th>
+                    <th>Tổng Lượt Chấm</th>
+                    <th>Đúng Giờ</th>
+                    <th>Đi Muộn</th>
+                    <th>Tỉ Lệ Tuân Thủ (%)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for d in dept_stats %}
+                {% set total = d.total_checks or 0 %}
+                {% set on_time = d.on_time_count or 0 %}
+                {% set rate = ((on_time / total) * 100) | round(1) if total > 0 else 100.0 %}
+                <tr>
+                    <td><strong>{{ d.dept_name }}</strong></td>
+                    <td>{{ total }} lượt</td>
+                    <td><span class="pill pill-success">{{ on_time }}</span></td>
+                    <td><span class="pill pill-danger">{{ d.late_count or 0 }}</span></td>
+                    <td>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <div style="flex: 1; height: 6px; background: #e2e8f0; border-radius: 3px; overflow: hidden;">
+                                <div style="width: {{ rate }}%; height: 100%; background: {{ '#10b981' if rate >= 85 else ('#f59e0b' if rate >= 70 else '#ef4444') }};"></div>
+                            </div>
+                            <span style="font-weight: 700; font-size: 0.85rem;">{{ rate }}%</span>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="5" style="text-align: center; color: var(--text-muted); padding: 2rem;">Chưa có dữ liệu phòng ban.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

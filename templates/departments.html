@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Quản Lý Phòng Ban - FaceCheckIn{% endblock %}
+{% block content %}
+<header class="page-header">
+    <div>
+        <h1 class="page-title">Cấu Trúc Phòng Ban Doanh Nghiệp</h1>
+        <p class="page-desc">Tổ chức và phân cấp phòng ban nhân sự</p>
+    </div>
+</header>
+
+<div class="panel">
+    <div class="panel-head"><span class="panel-title">Thêm Phòng Ban Mới</span></div>
+    <div class="panel-body">
+        <form method="POST" action="/admin/departments" style="display: flex; gap: 12px; flex-wrap: wrap;">
+            <input type="text" name="name" placeholder="Tên phòng ban (VD: Phòng AI)" class="form-control" style="flex: 1;" required>
+            <input type="text" name="description" placeholder="Mô tả chức năng" class="form-control" style="flex: 2;">
+            <button type="submit" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Lưu Phòng Ban</button>
+        </form>
+    </div>
+</div>
+
+<div class="panel">
+    <table class="table-custom">
+        <thead><tr><th>Tên Phòng Ban</th><th>Mô Tả</th><th>Số Lượng Nhân Sự</th></tr></thead>
+        <tbody>
+            {% for d in departments %}
+            <tr><td><strong>{{ d.name }}</strong></td><td>{{ d.description or 'N/A' }}</td><td><span class="confidence-tag">{{ d.staff_count }} nhân viên</span></td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

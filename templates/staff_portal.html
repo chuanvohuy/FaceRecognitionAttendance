@@ -1,0 +1,205 @@
+{% extends "base.html" %}
+{% block title %}Cổng Nhân Viên - FaceCheckIn Portal{% endblock %}
+
+{% block content %}
+<header class="page-header">
+    <div>
+        <h1 class="page-title">Xin chào, {{ emp.full_name }}! 👋</h1>
+        <p class="page-desc">Mã nhân sự: <strong style="color: var(--accent);">{{ emp.emp_code }}</strong> • Phòng ban: <strong>{{ emp.dept_name or 'N/A' }}</strong> • Chức vụ: <strong>{{ emp.position or 'Nhân viên' }}</strong></p>
+    </div>
+    <div style="display: flex; gap: 8px;">
+        <button type="button" class="btn btn-primary" onclick="openRequestModal()"><i class="fa-solid fa-paper-plane"></i> Gửi Yêu Cầu / Đơn Từ</button>
+        <a href="/checkin" class="btn btn-secondary"><i class="fa-solid fa-camera"></i> Kiosk Chấm Công</a>
+    </div>
+</header>
+
+<section class="metrics-grid-6" style="grid-template-columns: repeat(4, 1fr);">
+    <div class="metric-card">
+        <div class="metric-head"><span class="metric-title">Số Ngày Làm Việc</span><i class="fa-solid fa-calendar-check metric-icon"></i></div>
+        <div class="metric-value val-primary">{{ stats.worked_days or 0 }} <small style="font-size: 0.9rem; color: var(--text-muted);">ngày</small></div>
+    </div>
+    <div class="metric-card">
+        <div class="metric-head"><span class="metric-title">Tổng Giờ Làm</span><i class="fa-solid fa-clock metric-icon"></i></div>
+        <div class="metric-value val-success">{{ stats.total_hours or 0 }} <small style="font-size: 0.9rem; color: var(--text-muted);">giờ</small></div>
+    </div>
+    <div class="metric-card">
+        <div class="metric-head"><span class="metric-title">Làm Thêm Giờ (OT)</span><i class="fa-solid fa-business-time metric-icon"></i></div>
+        <div class="metric-value" style="color: #6366f1;">{{ stats.total_ot or 0 }} <small style="font-size: 0.9rem; color: var(--text-muted);">giờ</small></div>
+    </div>
+    <div class="metric-card">
+        <div class="metric-head"><span class="metric-title">Số Lần Đi Muộn</span><i class="fa-solid fa-clock-rotate-left metric-icon"></i></div>
+        <div class="metric-value val-warning">{{ stats.late_count or 0 }} <small style="font-size: 0.9rem; color: var(--text-muted);">lần</small></div>
+    </div>
+</section>
+
+<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1.25rem; margin-bottom: 2rem;">
+    <div class="panel" style="margin-bottom: 0;">
+        <div class="panel-head">
+            <span class="panel-title"><i class="fa-solid fa-calendar-days"></i> Lịch Ca Làm Việc Cá Nhân Sắp Tới</span>
+        </div>
+        <div class="table-responsive">
+            <table class="table-custom">
+                <thead>
+                    <tr><th>Ngày Làm</th><th>Ca Phân Công</th><th>Giờ Bắt Đầu</th><th>Giờ Kết Thúc</th><th>Ghi Chú</th></tr>
+                </thead>
+                <tbody>
+                    {% for sc in my_schedules %}
+                    <tr>
+                        <td><strong>{{ sc.work_date }}</strong></td>
+                        <td><span class="badge-type">{{ sc.shift_name }}</span></td>
+                        <td style="font-family: monospace;">{{ sc.start_time }}</td>
+                        <td style="font-family: monospace;">{{ sc.end_time }}</td>
+                        <td>{{ sc.note or '—' }}</td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="5" style="text-align: center; color: var(--text-muted); padding: 2rem;">Chưa có lịch phân ca trong tuần tới.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="panel" style="margin-bottom: 0;">
+        <div class="panel-head">
+            <span class="panel-title"><i class="fa-solid fa-bell"></i> Thông Báo Từ Quản Lý</span>
+        </div>
+        <div class="panel-body" style="padding: 0.75rem 1rem;">
+            {% for n in notifications %}
+            <div style="padding: 0.6rem 0; border-bottom: 1px solid var(--border-subtle);">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <strong style="font-size: 0.85rem;">{{ n.title }}</strong>
+                    <small style="color: var(--text-muted);">{{ n.created_at[:10] }}</small>
+                </div>
+                <p style="font-size: 0.78rem; color: var(--text-secondary); margin-top: 2px;">{{ n.message }}</p>
+            </div>
+            {% else %}
+            <p style="color: var(--text-muted); text-align: center; padding: 2rem 0;">Bạn không có thông báo mới nào.</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<div class="panel">
+    <div class="panel-head">
+        <span class="panel-title"><i class="fa-solid fa-file-signature"></i> Đơn Từ Yêu Cầu Của Bạn</span>
+        <button type="button" class="btn btn-secondary" onclick="openRequestModal()" style="font-size: 0.8rem;"><i class="fa-solid fa-plus"></i> Tạo đơn mới</button>
+    </div>
+    <div class="table-responsive">
+        <table class="table-custom">
+            <thead>
+                <tr><th>Mã Đơn</th><th>Loại Đơn</th><th>Tiêu Đề</th><th>Lý Do</th><th>Ngày Áp Dụng</th><th>Trạng Thái</th><th>Phản Hồi Quản Lý</th></tr>
+            </thead>
+            <tbody>
+                {% for r in my_requests %}
+                <tr>
+                    <td style="font-family: monospace; font-weight: 700;">#{{ r.id }}</td>
+                    <td><span class="badge-type">{{ r.request_type }}</span></td>
+                    <td><strong>{{ r.title }}</strong></td>
+                    <td>{{ r.reason }}</td>
+                    <td>{{ r.target_date }}</td>
+                    <td>
+                        {% if r.status == 'Chờ duyệt' %}
+                        <span class="pill pill-warning"><i class="fa-solid fa-clock"></i> Chờ duyệt</span>
+                        {% elif r.status == 'Đã duyệt' %}
+                        <span class="pill pill-success"><i class="fa-solid fa-check"></i> Đã duyệt</span>
+                        {% else %}
+                        <span class="pill pill-danger"><i class="fa-solid fa-xmark"></i> Từ chối</span>
+                        {% endif %}
+                    </td>
+                    <td><small style="color: var(--text-muted);">{{ r.approver_note or 'Chưa có ghi chú' }}</small></td>
+                </tr>
+                {% else %}
+                <tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 2.5rem;">Bạn chưa gửi đơn yêu cầu nào.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div id="requestModal" class="modal-backdrop" style="display: none;">
+    <div class="modal-box">
+        <div class="modal-head">
+            <h3>Gửi Đơn Yêu Cầu Cho Quản Lý</h3>
+            <button type="button" class="btn btn-subtle" onclick="closeRequestModal()">&times;</button>
+        </div>
+        <form id="staffRequestForm" onsubmit="handleRequestSubmit(event)">
+            <div class="form-group">
+                <label>Loại Yêu Cầu <span class="required">*</span></label>
+                <select name="request_type" id="reqTypeSelect" class="form-control" onchange="toggleReqFields(this.value)" required>
+                    <option value="leave">Xin nghỉ phép</option>
+                    <option value="shift_swap">Đăng ký đổi ca</option>
+                    <option value="overtime">Đăng ký làm thêm giờ (OT)</option>
+                    <option value="attendance_adjustment">Khiếu nại / Điều chỉnh công sai</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Tiêu Đề Đơn <span class="required">*</span></label>
+                <input type="text" name="title" class="form-control" placeholder="VD: Xin nghỉ phép việc gia đình" required>
+            </div>
+            <div class="form-group">
+                <label>Ngày Áp Dụng <span class="required">*</span></label>
+                <input type="date" name="target_date" class="form-control" required>
+            </div>
+
+            <div id="fieldShiftSwap" class="form-group" style="display: none;">
+                <label>Chọn Ca Mới Muốn Đổi Đến</label>
+                <select name="new_shift_id" class="form-control">
+                    {% for sh in all_shifts %}
+                    <option value="{{ sh.id }}">{{ sh.name }} ({{ sh.start_time }} - {{ sh.end_time }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div id="fieldOvertime" class="form-group" style="display: none;">
+                <label>Số Giờ Làm Thêm Đăng Ký (h)</label>
+                <input type="number" step="0.5" name="overtime_hours" class="form-control" placeholder="VD: 2.0" value="1.0">
+            </div>
+
+            <div id="fieldAdjustment" class="form-group" style="display: none;">
+                <label>Mã Lượt Chấm Công Cần Điều Chỉnh (ID)</label>
+                <input type="number" name="attendance_id" class="form-control" placeholder="Nhập ID bản ghi điểm danh">
+            </div>
+
+            <div class="form-group">
+                <label>Lý Do Chi Tiết <span class="required">*</span></label>
+                <textarea name="reason" rows="3" class="form-control" placeholder="Giải trình cụ thể lý do nộp đơn..." required></textarea>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 1.5rem;">
+                <button type="button" class="btn btn-secondary" onclick="closeRequestModal()">Hủy</button>
+                <button type="submit" class="btn btn-primary"><i class="fa-solid fa-paper-plane"></i> Gửi Đơn</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function openRequestModal() { document.getElementById('requestModal').style.display = 'flex'; }
+    function closeRequestModal() { document.getElementById('requestModal').style.display = 'none'; }
+    function toggleReqFields(val) {
+        document.getElementById('fieldShiftSwap').style.display = val === 'shift_swap' ? 'block' : 'none';
+        document.getElementById('fieldOvertime').style.display = val === 'overtime' ? 'block' : 'none';
+        document.getElementById('fieldAdjustment').style.display = val === 'attendance_adjustment' ? 'block' : 'none';
+    }
+
+    async function handleRequestSubmit(e) {
+        e.preventDefault();
+        const form = e.target;
+        const formData = new FormData(form);
+        const res = await fetch('/api/staff/submit-request', {
+            method: 'POST',
+            body: formData
+        });
+        const d = await res.json();
+        if (d.success) {
+            Swal.fire({ icon: 'success', title: 'Thành công', text: d.message, timer: 1500 });
+            closeRequestModal();
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            Swal.fire({ icon: 'error', title: 'Thất bại', text: d.message });
+        }
+    }
+</script>
+{% endblock %}

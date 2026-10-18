@@ -1,0 +1,189 @@
+{% extends "base.html" %}
+{% block title %}Dashboard Điều Hành - FaceCheckIn{% endblock %}
+
+{% block content %}
+<header class="page-header">
+    <div>
+        <h1 class="page-title">Trung Tâm Điều Hành Nhân Sự</h1>
+        <p class="page-desc">Giám sát dữ liệu chấm công và luồng làm việc theo thời gian thực</p>
+    </div>
+    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+        <a href="/checkin" class="btn btn-primary"><i class="fa-solid fa-camera"></i> Kiosk Chấm Công</a>
+        <a href="/export/pdf" class="btn btn-secondary"><i class="fa-solid fa-file-pdf"></i> Xuất Báo Cáo PDF</a>
+    </div>
+</header>
+
+
+{% if pending_requests_count > 0 or anomalies_today > 0 %}
+<div style="display: flex; gap: 12px; margin-bottom: 1.5rem; flex-wrap: wrap;">
+    {% if pending_requests_count > 0 %}
+    <a href="/admin/requests?status=Chờ duyệt" style="flex: 1; text-decoration: none;">
+        <div class="panel" style="margin-bottom: 0; padding: 0.85rem 1.25rem; background: #eff6ff; border-color: #bfdbfe; display: flex; align-items: center; justify-content: space-between;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <i class="fa-solid fa-bell fa-shake" style="color: #2563eb; font-size: 1.2rem;"></i>
+                <span style="font-weight: 600; color: #1e40af; font-size: 0.9rem;">Có <strong>{{ pending_requests_count }}</strong> đơn yêu cầu mới đang chờ duyệt</span>
+            </div>
+            <span class="btn btn-primary" style="padding: 0.35rem 0.75rem; font-size: 0.75rem;">Xử lý ngay &rarr;</span>
+        </div>
+    </a>
+    {% endif %}
+    {% if anomalies_today > 0 %}
+    <a href="/admin/anomalies" style="flex: 1; text-decoration: none;">
+        <div class="panel" style="margin-bottom: 0; padding: 0.85rem 1.25rem; background: #fff1f2; border-color: #fecdd3; display: flex; align-items: center; justify-content: space-between;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <i class="fa-solid fa-triangle-exclamation" style="color: #e11d48; font-size: 1.2rem;"></i>
+                <span style="font-weight: 600; color: #9f1239; font-size: 0.9rem;">Có <strong>{{ anomalies_today }}</strong> sự kiện bất thường được gắn cờ hôm nay</span>
+            </div>
+            <span class="btn btn-danger" style="padding: 0.35rem 0.75rem; font-size: 0.75rem;">Kiểm tra &rarr;</span>
+        </div>
+    </a>
+    {% endif %}
+</div>
+{% endif %}
+
+<!-- 6 Thẻ KPI Thống Kê -->
+<section class="metrics-grid-6">
+    <div class="metric-card">
+        <div class="metric-head"><span class="metric-title">Tổng Nhân Viên</span><i class="fa-solid fa-users metric-icon"></i></div>
+        <div class="metric-value val-primary">{{ total_staff }}</div>
+    </div>
+    <div class="metric-card">
+        <div class="metric-head"><span class="metric-title">Đã Chấm Công</span><i class="fa-solid fa-circle-check metric-icon"></i></div>
+        <div class="metric-value val-success">{{ checked_in_today }}</div>
+    </div>
+    <div class="metric-card">
+        <div class="metric-head"><span class="metric-title">Chưa Chấm Công</span><i class="fa-solid fa-user-xmark metric-icon"></i></div>
+        <div class="metric-value" style="color: #94a3b8;">{{ not_checked_in }}</div>
+    </div>
+    <div class="metric-card">
+        <div class="metric-head"><span class="metric-title">Đi Muộn</span><i class="fa-solid fa-clock-rotate-left metric-icon"></i></div>
+        <div class="metric-value val-warning">{{ late_count }}</div>
+    </div>
+    <div class="metric-card">
+        <div class="metric-head"><span class="metric-title">Về Sớm</span><i class="fa-solid fa-person-walking-arrow-right metric-icon"></i></div>
+        <div class="metric-value" style="color: #ec4899;">{{ early_leave_count }}</div>
+    </div>
+    <div class="metric-card">
+        <div class="metric-head"><span class="metric-title">Đang Làm Việc</span><i class="fa-solid fa-briefcase metric-icon"></i></div>
+        <div class="metric-value" style="color: #06b6d4;">{{ working_count }}</div>
+    </div>
+</section>
+
+<!-- 2 Biểu Đồ Thống Kê: 7 Ngày & Cơ Cấu -->
+<section class="charts-row">
+    <div class="panel chart-card">
+        <div class="panel-head">
+            <span class="panel-title"><i class="fa-solid fa-chart-column"></i> Biểu Đồ Chấm Công 7 Ngày Gần Nhất</span>
+        </div>
+        <div class="panel-body chart-container">
+            <canvas id="trendChart"></canvas>
+        </div>
+    </div>
+
+    <div class="panel chart-card">
+        <div class="panel-head">
+            <span class="panel-title"><i class="fa-solid fa-chart-pie"></i> Cơ Cấu Đi Muộn Hôm Nay</span>
+        </div>
+        <div class="panel-body chart-container">
+            <canvas id="pieChart"></canvas>
+        </div>
+    </div>
+</section>
+
+<!-- Danh Sách Chấm Công Gần Nhất -->
+<div class="panel">
+    <div class="panel-head">
+        <span class="panel-title"><i class="fa-solid fa-clock-rotate-left"></i> Danh Sách Chấm Công Gần Nhất</span>
+        <a href="/history" class="btn btn-secondary" style="font-size: 0.8rem;">Xem toàn bộ &rarr;</a>
+    </div>
+    <div class="table-responsive">
+        <table class="table-custom">
+            <thead>
+                <tr>
+                    <th>Nhân Sự</th>
+                    <th>Thời Gian</th>
+                    <th>Loại</th>
+                    <th>Độ Tin Cậy</th>
+                    <th>Trạng Thái</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in recent_logs %}
+                <tr>
+                    <td>
+                        <div class="employee-cell">
+                            {% if r.snapshot_path %}
+                            <img src="{{ url_for('static', filename=r.snapshot_path) }}" class="avatar-img" alt="snap">
+                            {% else %}
+                            <div class="avatar-placeholder"><i class="fa-solid fa-user"></i></div>
+                            {% endif %}
+                            <div>
+                                <span style="font-weight: 600; display: block;">{{ r.emp_name }}</span>
+                                <small style="color: var(--text-muted);">{{ r.dept_name or 'N/A' }} • {{ r.position or 'Nhân viên' }}</small>
+                            </div>
+                        </div>
+                    </td>
+                    <td>{{ r.check_time }}</td>
+                    <td><span class="badge-type">{{ r.check_type }}</span></td>
+                    <td><span class="confidence-tag">{{ r.confidence }}%</span></td>
+                    <td>
+                        <span class="pill {{ 'pill-success' if r.status == 'Đúng giờ' else ('pill-danger' if r.status == 'Đi muộn' else 'pill-warning') }}">
+                            <span class="pill-dot"></span> {{ r.status }}
+                        </span>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="5" style="text-align: center; color: var(--text-muted); padding: 2rem;">Chưa có lượt chấm công nào hôm nay.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Dữ liệu an toàn truyền vào Chart.js -->
+<div id="chartDataHolder" style="display: none;"
+     data-dates='{{ trend_dates | tojson }}'
+     data-presents='{{ trend_presents | tojson }}'
+     data-lates='{{ trend_lates | tojson }}'
+     data-checked="{{ checked_in_today or 0 }}"
+     data-late="{{ late_count or 0 }}"
+     data-early="{{ early_leave_count or 0 }}">
+</div>
+
+<script>
+    const holder = document.getElementById('chartDataHolder');
+    const labels = JSON.parse(holder.getAttribute('data-dates') || '[]');
+    const presents = JSON.parse(holder.getAttribute('data-presents') || '[]');
+    const lates = JSON.parse(holder.getAttribute('data-lates') || '[]');
+
+    const checkedVal = Number(holder.getAttribute('data-checked')) || 0;
+    const lateVal = Number(holder.getAttribute('data-late')) || 0;
+    const earlyVal = Number(holder.getAttribute('data-early')) || 0;
+
+    // 1. Biểu đồ 7 ngày
+    new Chart(document.getElementById('trendChart').getContext('2d'), {
+        type: 'bar',
+        data: {
+            labels: labels.length ? labels : ['Hôm nay'],
+            datasets: [
+                { label: 'Có mặt', data: presents.length ? presents : [checkedVal], backgroundColor: '#10b981', borderRadius: 4 },
+                { label: 'Đi muộn', data: lates.length ? lates : [lateVal], backgroundColor: '#f59e0b', borderRadius: 4 }
+            ]
+        },
+        options: { responsive: true, maintainAspectRatio: false }
+    });
+
+    // 2. Biểu đồ tròn
+    new Chart(document.getElementById('pieChart').getContext('2d'), {
+        type: 'doughnut',
+        data: {
+            labels: ['Đúng giờ', 'Đi muộn', 'Về sớm'],
+            datasets: [{
+                data: [Math.max(0, checkedVal - lateVal), lateVal, earlyVal],
+                backgroundColor: ['#10b981', '#f59e0b', '#ec4899']
+            }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, cutout: '70%' }
+    });
+</script>
+{% endblock %}

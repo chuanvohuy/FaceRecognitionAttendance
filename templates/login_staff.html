@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cổng Thông Tin Nhân Viên &amp; Sinh Viên</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="auth-wrapper-staff">
+    <div class="auth-card-staff">
+        <div style="text-align: center; margin-bottom: 2rem;">
+            <div class="auth-icon-circle">
+                <i class="fa-solid fa-id-badge"></i>
+            </div>
+            <h2>Cổng Thông Tin Nhân Sự</h2>
+            <p>Tra cứu lịch sử điểm danh và ca làm việc cá nhân</p>
+        </div>
+
+        {% if error %}
+        <div class="auth-alert-danger">
+            <i class="fa-solid fa-triangle-exclamation"></i> {{ error }}
+        </div>
+        {% endif %}
+
+        <form method="POST" action="/staff/login">
+            <div class="form-group">
+                <label>Mã Số Sinh Viên / Nhân Viên (MSSV)</label>
+                <input type="text" name="mssv" class="form-control font-mono" required 
+                       placeholder="Nhập dãy số MSSV..." 
+                       pattern="[0-9]+" 
+                       oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+            </div>
+
+            <div class="form-group">
+                <label>Mật Khẩu</label>
+                <input type="password" name="password" class="form-control" required placeholder="••••••••">
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-block" style="margin-top: 1rem;">
+                <i class="fa-solid fa-arrow-right-to-bracket"></i> Đăng Nhập Cổng Nhân Sự
+            </button>
+        </form>
+
+        <div class="auth-footer">
+            <a href="/admin/login">
+                <i class="fa-solid fa-shield"></i> Chuyển sang <strong>Cổng Đăng Nhập Quản Trị Viên</strong>
+            </a>
+        </div>
+    </div>
+</body>
+</html>

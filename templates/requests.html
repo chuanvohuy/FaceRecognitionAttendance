@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+{% block title %}Phê Duyệt Đơn Từ &amp; Yêu Cầu - FaceCheckIn{% endblock %}
+
+{% block content %}
+<header class="page-header">
+    <div>
+        <h1 class="page-title">Trung Tâm Phê Duyệt Đơn Từ &amp; Yêu Cầu</h1>
+        <p class="page-desc">Xét duyệt đơn xin nghỉ, đổi ca, làm thêm giờ và khiếu nại điều chỉnh chấm công</p>
+    </div>
+    <div style="display: flex; gap: 8px;">
+        <a href="/admin/requests?status=Chờ duyệt" class="btn btn-warning"><i class="fa-solid fa-clock"></i> Đơn Chờ Duyệt</a>
+        <a href="/admin/requests" class="btn btn-secondary">Xem Tất Cả</a>
+    </div>
+</header>
+
+<div class="panel">
+    <div class="panel-head">
+        <span class="panel-title"><i class="fa-solid fa-list-check"></i> Danh Sách Đơn Từ Nhân Sự</span>
+        <div style="display: flex; gap: 6px;">
+            <a href="/admin/requests" class="btn btn-subtle" style="font-size: 0.8rem;">Tất cả</a>
+            <a href="/admin/requests?status=Chờ duyệt" class="btn btn-subtle" style="font-size: 0.8rem; color: var(--warning); font-weight: 700;">Chờ duyệt</a>
+            <a href="/admin/requests?status=Đã duyệt" class="btn btn-subtle" style="font-size: 0.8rem; color: var(--success); font-weight: 700;">Đã duyệt</a>
+            <a href="/admin/requests?status=Từ chối" class="btn btn-subtle" style="font-size: 0.8rem; color: var(--danger); font-weight: 700;">Từ chối</a>
+        </div>
+    </div>
+    <div class="table-responsive">
+        <table class="table-custom">
+            <thead>
+                <tr>
+                    <th>Mã Đơn</th>
+                    <th>Nhân Sự</th>
+                    <th>Loại Đơn</th>
+                    <th>Tiêu Đề / Nội Dung</th>
+                    <th>Ngày Áp Dụng</th>
+                    <th>Thông Tin Bổ Sung</th>
+                    <th>Trạng Thái</th>
+                    <th>Người Duyệt</th>
+                    <th style="text-align: right;">Hành Động</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in requests %}
+                <tr>
+                    <td style="font-family: monospace; font-weight: 700;">#{{ r.id }}</td>
+                    <td>
+                        <strong>{{ r.full_name }}</strong><br>
+                        <small style="color: var(--text-muted);">{{ r.emp_code }} • {{ r.dept_name or 'N/A' }}</small>
+                    </td>
+                    <td>
+                        {% if r.request_type == 'leave' %}
+                        <span class="badge-type" style="background: #fef3c7; color: #b45309;"><i class="fa-solid fa-umbrella-beach"></i> Nghỉ phép</span>
+                        {% elif r.request_type == 'shift_swap' %}
+                        <span class="badge-type" style="background: #e0e7ff; color: #4338ca;"><i class="fa-solid fa-repeat"></i> Đổi ca</span>
+                        {% elif r.request_type == 'overtime' %}
+                        <span class="badge-type" style="background: #ecfdf5; color: #047857;"><i class="fa-solid fa-business-time"></i> Tăng ca</span>
+                        {% else %}
+                        <span class="badge-type" style="background: #f1f5f9; color: #334155;"><i class="fa-solid fa-pen-to-square"></i> Điều chỉnh công</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <strong>{{ r.title }}</strong><br>
+                        <small style="color: var(--text-secondary);">{{ r.reason }}</small>
+                    </td>
+                    <td>{{ r.target_date }}</td>
+                    <td>
+                        {% if r.request_type == 'shift_swap' %}
+                        <span>Ca mới: <strong>{{ r.new_shift_name }}</strong></span>
+                        {% elif r.request_type == 'overtime' %}
+                        <span>Số giờ OT: <strong>{{ r.overtime_hours }}h</strong></span>
+                        {% elif r.request_type == 'attendance_adjustment' %}
+                        <span>Lượt công ID: #{{ r.attendance_id }}</span>
+                        {% else %}
+                        —
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if r.status == 'Chờ duyệt' %}
+                        <span class="pill pill-warning"><i class="fa-solid fa-clock"></i> Chờ duyệt</span>
+                        {% elif r.status == 'Đã duyệt' %}
+                        <span class="pill pill-success"><i class="fa-solid fa-check"></i> Đã duyệt</span>
+                        {% else %}
+                        <span class="pill pill-danger"><i class="fa-solid fa-xmark"></i> Từ chối</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if r.approver %}
+                        <small style="display: block;"><strong>{{ r.approver }}</strong></small>
+                        <small style="color: var(--text-muted);">{{ r.approved_at }}</small>
+                        {% else %}
+                        <span style="color: var(--text-muted);">—</span>
+                        {% endif %}
+                    </td>
+                    <td style="text-align: right;">
+                        {% if r.status == 'Chờ duyệt' %}
+                        <button type="button" class="btn btn-primary" style="padding: 0.35rem 0.65rem;" onclick="processReq({{ r.id }}, 'approved')" title="Phê duyệt">
+                            <i class="fa-solid fa-check"></i>
+                        </button>
+                        <button type="button" class="btn btn-danger" style="padding: 0.35rem 0.65rem;" onclick="processReq({{ r.id }}, 'rejected')" title="Từ chối">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                        {% else %}
+                        <small style="color: var(--text-muted);">Đã hoàn tất</small>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="9" style="text-align: center; color: var(--text-muted); padding: 3rem;">Chưa có yêu cầu nào trong danh sách.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    async function processReq(id, action) {
+        const actionText = action === 'approved' ? 'phê duyệt' : 'từ chối';
+        const { value: note } = await Swal.fire({
+            title: 'Xác nhận ' + actionText + ' đơn?',
+            input: 'text',
+            inputLabel: 'Ghi chú phản hồi cho nhân viên (tùy chọn):',
+            inputPlaceholder: 'Nhập lý do hoặc lời nhắn...',
+            showCancelButton: true,
+            confirmButtonText: 'Xác nhận',
+            cancelButtonText: 'Hủy'
+        });
+
+        if (note !== undefined) {
+            const res = await fetch('/admin/requests/action/' + id, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: action, note: note })
+            });
+            const d = await res.json();
+            Swal.fire({ icon: d.success ? 'success' : 'error', title: 'Thông báo', text: d.message, timer: 1500 });
+            setTimeout(() => location.reload(), 1500);
+        }
+    }
+</script>
+{% endblock %}

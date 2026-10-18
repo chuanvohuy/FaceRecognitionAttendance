@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}FaceCheckIn Enterprise Portal{% endblock %}</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="dashboard-layout">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar" id="appSidebar">
+            <div class="sidebar-brand">
+                <div class="brand-icon"><i class="fa-solid fa-fingerprint"></i></div>
+                <div class="brand-title">FaceCheckIn <small style="font-size: 0.65rem; color: #38bdf8; display: block;">ENTERPRISE V2</small></div>
+                <div class="brand-badge">{{ role | upper }}</div>
+            </div>
+
+            <ul class="sidebar-nav">
+                {% if role in ['admin', 'manager'] %}
+                <li class="nav-item {% if request.path == '/' %}active{% endif %}">
+                    <a href="/"><i class="fa-solid fa-chart-pie"></i> Bảng Điều Khiển</a>
+                </li>
+                <li class="nav-item {% if request.path == '/admin/schedules' %}active{% endif %}">
+                    <a href="/admin/schedules"><i class="fa-solid fa-calendar-days"></i> Lịch Biểu & Xếp Ca</a>
+                </li>
+                <li class="nav-item {% if request.path == '/admin/requests' %}active{% endif %}">
+                    <a href="/admin/requests"><i class="fa-solid fa-clipboard-check"></i> Phê Duyệt Đơn Từ</a>
+                </li>
+                <li class="nav-item {% if request.path == '/admin/anomalies' %}active{% endif %}">
+                    <a href="/admin/anomalies"><i class="fa-solid fa-triangle-exclamation"></i> Cảnh Báo Bất Thường</a>
+                </li>
+                <li class="nav-item {% if request.path == '/admin/payroll' %}active{% endif %}">
+                    <a href="/admin/payroll"><i class="fa-solid fa-file-invoice-dollar"></i> Tính Công & Bảng Lương</a>
+                </li>
+                <li class="nav-item {% if request.path == '/admin/employees' %}active{% endif %}">
+                    <a href="/admin/employees"><i class="fa-solid fa-users"></i> Quản Lý Nhân Viên</a>
+                </li>
+                <li class="nav-item {% if request.path == '/admin/departments' %}active{% endif %}">
+                    <a href="/admin/departments"><i class="fa-solid fa-building-user"></i> Phòng Ban</a>
+                </li>
+                <li class="nav-item {% if request.path == '/admin/shifts' %}active{% endif %}">
+                    <a href="/admin/shifts"><i class="fa-solid fa-business-time"></i> Ca Làm Việc</a>
+                </li>
+                <li class="nav-item {% if request.path == '/admin/kiosks' %}active{% endif %}">
+                    <a href="/admin/kiosks"><i class="fa-solid fa-display"></i> Thiết Bị Kiosk</a>
+                </li>
+                {% if role == 'admin' %}
+                <li class="nav-item {% if request.path == '/admin/security' %}active{% endif %}">
+                    <a href="/admin/security"><i class="fa-solid fa-shield-halved"></i> Bảo Mật & Cài Đặt</a>
+                </li>
+                {% endif %}
+                {% endif %}
+
+                {% if role == 'staff' %}
+                <li class="nav-item {% if request.path == '/staff/portal' %}active{% endif %}">
+                    <a href="/staff/portal"><i class="fa-solid fa-id-card"></i> Cổng Cá Nhân (Portal)</a>
+                </li>
+                {% endif %}
+
+                <li class="nav-item {% if request.path == '/checkin' %}active{% endif %}">
+                    <a href="/checkin"><i class="fa-solid fa-camera"></i> Kiosk Chấm Công AI</a>
+                </li>
+                <li class="nav-item {% if request.path == '/history' %}active{% endif %}">
+                    <a href="/history"><i class="fa-solid fa-clock-rotate-left"></i> Lịch Sử Điểm Danh</a>
+                </li>
+            </ul>
+
+            <div class="sidebar-user">
+                <div class="user-profile">
+                    <div class="user-avatar">{{ user[:1] | upper }}</div>
+                    <div class="user-info">
+                        <span class="user-name">{{ user }}</span>
+                        <span class="user-role">{{ role }}</span>
+                    </div>
+                </div>
+                <a href="/logout" class="btn btn-subtle" title="Đăng xuất"><i class="fa-solid fa-arrow-right-from-bracket"></i></a>
+            </div>
+        </aside>
+
+        <!-- Main Workspace -->
+        <div class="main-wrapper">
+            <!-- Mobile Toggle Header -->
+            <div class="mobile-nav-bar">
+                <button type="button" class="mobile-menu-btn" onclick="toggleSidebar()">
+                    <i class="fa-solid fa-bars"></i>
+                </button>
+                <span style="font-weight: 700; color: #fff;">FaceCheckIn Enterprise</span>
+                <a href="/logout" style="color: #ef4444;"><i class="fa-solid fa-power-off"></i></a>
+            </div>
+
+            {% block content %}{% endblock %}
+        </div>
+    </div>
+
+    <script>
+        function toggleSidebar() {
+            document.getElementById('appSidebar').classList.toggle('open');
+        }
+
+        // Lắng nghe sự kiện thông báo thời gian thực (SSE)
+        try {
+            const evtSource = new EventSource('/api/notifications/stream');
+            evtSource.onmessage = function(e) {
+                // Keep-alive or live notification
+            };
+        } catch(e) {}
+    </script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

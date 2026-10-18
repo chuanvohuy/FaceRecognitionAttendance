@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% block title %}Lịch Sử &amp; Báo Cáo Chấm Công - FaceCheckIn{% endblock %}
+
+{% block content %}
+<header class="page-header">
+    <div>
+        <h1 class="page-title">Nhật Ký &amp; Dữ Liệu Chấm Công</h1>
+        <p class="page-desc">Tra cứu lịch sử, đối soát hình ảnh snapshot và xuất dữ liệu báo cáo</p>
+    </div>
+    <div style="display: flex; gap: 8px;">
+        <a href="/export/csv" class="btn btn-secondary"><i class="fa-solid fa-file-csv"></i> Xuất CSV/Excel</a>
+        <a href="/export/pdf" class="btn btn-secondary"><i class="fa-solid fa-file-pdf"></i> Xuất PDF</a>
+    </div>
+</header>
+
+<!-- Khung Bộ Lọc (Filter Form) Theo Yêu Cầu -->
+<div class="panel">
+    <div class="panel-head"><span class="panel-title"><i class="fa-solid fa-filter"></i> Bộ Lọc Dữ Liệu</span></div>
+    <div class="panel-body">
+        <form method="GET" action="/history" class="filter-grid">
+            <div class="form-group">
+                <label>Từ ngày</label>
+                <input type="date" name="from_date" class="form-control" value="{{ from_date }}">
+            </div>
+            <div class="form-group">
+                <label>Đến ngày</label>
+                <input type="date" name="to_date" class="form-control" value="{{ to_date }}">
+            </div>
+            {% if role != 'staff' %}
+            <div class="form-group">
+                <label>Phòng ban</label>
+                <select name="dept_id" class="form-control">
+                    <option value="">Tất cả phòng ban</option>
+                    {% for d in departments %}
+                    <option value="{{ d.id }}" {% if dept_id == d.id|string %}selected{% endif %}>{{ d.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Trạng thái</label>
+                <select name="status" class="form-control">
+                    <option value="">Tất cả trạng thái</option>
+                    <option value="Đúng giờ" {% if status_filter == 'Đúng giờ' %}selected{% endif %}>Đúng giờ</option>
+                    <option value="Đi muộn" {% if status_filter == 'Đi muộn' %}selected{% endif %}>Đi muộn</option>
+                    <option value="Về sớm" {% if status_filter == 'Về sớm' %}selected{% endif %}>Về sớm</option>
+                </select>
+            </div>
+            {% endif %}
+            <div class="form-group" style="align-self: flex-end;">
+                <button type="submit" class="btn btn-primary" style="width: 100%;"><i class="fa-solid fa-magnifying-glass"></i> Tìm Kiếm</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Bảng Lịch Sử Chi Tiết -->
+<div class="panel">
+    <div class="table-responsive">
+        <table class="table-custom">
+            <thead>
+                <tr>
+                    <th>Ảnh Snapshot</th>
+                    <th>Ngày Chấm</th>
+                    <th>Giờ Chấm</th>
+                    <th>Nhân Sự</th>
+                    <th>Phòng Ban</th>
+                    <th>Loại</th>
+                    <th>Confidence</th>
+                    <th>Liveness AI</th>
+                    <th>Trạng Thái</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in records %}
+                <tr>
+                    <td>
+                        {% if r.snapshot_path %}
+                        <img src="{{ url_for('static', filename=r.snapshot_path) }}" class="avatar-img" alt="snap">
+                        {% else %}
+                        <span style="color: var(--text-muted); font-size: 0.8rem;">Không có</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ r.check_date }}</td>
+                    <td style="font-family: monospace; font-weight: 600;">{{ r.check_time }}</td>
+                    <td><strong>{{ r.emp_name }}</strong> ({{ r.emp_code }})</td>
+                    <td>{{ r.dept_name or 'N/A' }}</td>
+                    <td><span class="badge-type">{{ r.check_type }}</span></td>
+                    <td><span class="confidence-tag">{{ r.confidence }}%</span></td>
+                    <td><span class="pill pill-success"><i class="fa-solid fa-shield-check"></i> {{ r.liveness_status or "Verified" }}</span></td>
+                    <td>
+                        <span class="pill {{ 'pill-success' if r.status == 'Đúng giờ' else ('pill-danger' if r.status == 'Đi muộn' else 'pill-warning') }}">
+                            <span class="pill-dot"></span> {{ r.status }}
+                        </span>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="9" style="text-align: center; color: var(--text-muted); padding: 3rem;">Không tìm thấy dữ liệu điểm danh phù hợp.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

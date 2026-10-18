@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block title %}Trung Tâm Bảo Mật &amp; Kiểm Toán - FaceCheckIn{% endblock %}
+
+{% block content %}
+<header class="page-header">
+    <div>
+        <h1 class="page-title">Trung Tâm Bảo Mật, Kiểm Toán &amp; Cài Đặt Hệ Thống</h1>
+        <p class="page-desc">Giám sát nhật ký hoạt động (Audit Logs), quản lý khóa tài khoản và cấu hình ngưỡng AI</p>
+    </div>
+    <div style="display: flex; gap: 8px;">
+        <a href="/admin/backup" class="btn btn-secondary"><i class="fa-solid fa-download"></i> Sao Lưu Cơ Sở Dữ Liệu (Backup DB)</a>
+    </div>
+</header>
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-bottom: 2rem;">
+    <div class="panel" style="margin-bottom: 0;">
+        <div class="panel-head">
+            <span class="panel-title"><i class="fa-solid fa-sliders"></i> Cấu Hình Tham Số Nhận Diện &amp; Bảo Mật</span>
+        </div>
+        <div class="panel-body">
+            <form method="POST" action="/admin/settings/update">
+                {% for s in settings %}
+                <div class="form-group">
+                    <label><strong>{{ s.key }}</strong>: <small style="color: var(--text-muted);">{{ s.description }}</small></label>
+                    <input type="text" name="{{ s.key }}" value="{{ s.value }}" class="form-control font-mono">
+                </div>
+                {% endfor %}
+                <button type="submit" class="btn btn-primary" style="margin-top: 0.5rem;"><i class="fa-solid fa-save"></i> Cập Nhật Cài Đặt</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="panel" style="margin-bottom: 0;">
+        <div class="panel-head">
+            <span class="panel-title"><i class="fa-solid fa-user-lock"></i> Tài Khoản Đang Bị Tạm Khóa</span>
+        </div>
+        <div class="panel-body">
+            {% for u in locked_users %}
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 0; border-bottom: 1px solid var(--border-subtle);">
+                <div>
+                    <strong>{{ u.full_name or u.username }}</strong> ({{ u.username }})<br>
+                    <small style="color: var(--danger);">Khóa đến: {{ u.locked_until }}</small>
+                </div>
+                <button type="button" class="btn btn-secondary" onclick="unlockUserDirect({{ u.id }})" style="font-size: 0.8rem;">
+                    <i class="fa-solid fa-lock-open"></i> Mở Khóa Ngay
+                </button>
+            </div>
+            {% else %}
+            <p style="color: var(--text-muted); text-align: center; padding: 2.5rem 0;">Hiện tại không có tài khoản nào bị tạm khóa.</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<div class="panel">
+    <div class="panel-head">
+        <span class="panel-title"><i class="fa-solid fa-shield-virus"></i> Nhật Ký Kiểm Toán Hoạt Động (50 sự kiện gần nhất)</span>
+    </div>
+    <div class="table-responsive">
+        <table class="table-custom">
+            <thead>
+                <tr><th>Thời Gian</th><th>Người Thực Hiện</th><th>Hành Động</th><th>Chi Tiết</th></tr>
+            </thead>
+            <tbody>
+                {% for log in logs %}
+                <tr>
+                    <td style="font-family: monospace;"><small>{{ log.created_at }}</small></td>
+                    <td><strong>{{ log.actor }}</strong></td>
+                    <td><span class="badge-type">{{ log.action }}</span></td>
+                    <td>{{ log.detail or '—' }}</td>
+                </tr>
+                {% else %}
+                <tr><td colspan="4" style="text-align: center; color: var(--text-muted); padding: 2rem;">Chưa có nhật ký ghi nhận.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    async function unlockUserDirect(userId) {
+        if (confirm('Mở khóa tài khoản này ngay lập tức?')) {
+            const res = await fetch('/admin/security/unlock/' + userId, { method: 'POST' });
+            const d = await res.json();
+            Swal.fire({ icon: 'success', title: 'Thành công', text: d.message, timer: 1200 });
+            setTimeout(() => location.reload(), 1200);
+        }
+    }
+</script>
+{% endblock %}

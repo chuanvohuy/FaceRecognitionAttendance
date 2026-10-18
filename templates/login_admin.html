@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cổng Quản Trị Hệ Thống - Admin Portal</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="auth-wrapper-admin">
+    <div class="auth-card-admin">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <div class="brand-icon" style="background: linear-gradient(135deg, #6366f1, #3b82f6);">
+                    <i class="fa-solid fa-shield-halved"></i>
+                </div>
+                <span class="brand-title">FaceCheckIn</span>
+            </div>
+            <span class="admin-badge-tag">ADMIN PORTAL</span>
+        </div>
+
+        <h2>Đăng Nhập Quản Trị Viên</h2>
+        <p>Cổng giám sát, cấu hình nhân sự và phân tích dữ liệu</p>
+
+        {% if error %}
+        <div class="auth-alert-danger">
+            <i class="fa-solid fa-circle-exclamation"></i> {{ error }}
+        </div>
+        {% endif %}
+
+        <form method="POST" action="/admin/login">
+            <div class="form-group">
+                <label>Tài khoản quản trị</label>
+                <input type="text" name="username" class="form-control" required placeholder="admin" autofocus>
+            </div>
+            <div class="form-group">
+                <label>Mật khẩu xác thực</label>
+                <input type="password" name="password" class="form-control" required placeholder="••••••••">
+            </div>
+            <button type="submit" class="btn btn-admin btn-block" style="margin-top: 1rem;">
+                <i class="fa-solid fa-lock-open"></i> Đăng Nhập Hệ Thống
+            </button>
+        </form>
+
+        <div class="auth-footer">
+            <a href="/staff/login">
+                <i class="fa-solid fa-user"></i> Bạn là nhân viên/sinh viên? <strong>Đăng nhập tại đây &rarr;</strong>
+            </a>
+        </div>
+    </div>
+</body>
+</html>

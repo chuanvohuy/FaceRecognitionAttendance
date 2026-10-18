@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% block title %}Tính Công &amp; Tổng Hợp Bảng Lương - FaceCheckIn{% endblock %}
+
+{% block content %}
+<header class="page-header">
+    <div>
+        <h1 class="page-title">Bảng Tổng Hợp Công &amp; Lương Nhân Sự</h1>
+        <p class="page-desc">Chuyển dữ liệu chấm công thành dữ liệu tính lương tháng {{ month }}</p>
+    </div>
+    <div style="display: flex; gap: 8px;">
+        <a href="/export/payroll/csv?month={{ month }}" class="btn btn-secondary"><i class="fa-solid fa-file-csv"></i> Xuất Bảng Lương CSV</a>
+    </div>
+</header>
+
+<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.25rem; margin-bottom: 2rem;">
+    <div class="metric-card">
+        <div class="metric-head"><span class="metric-title">Tổng Chi Phí Lương Dự Kiến</span><i class="fa-solid fa-money-bill-wave metric-icon"></i></div>
+        <div class="metric-value val-primary" style="font-size: 1.7rem;">{{ "{:,.0f}".format(total_payroll) }} <small style="font-size: 0.85rem; color: var(--text-muted);">VND</small></div>
+    </div>
+    <div class="metric-card">
+        <div class="metric-head"><span class="metric-title">Tổng Nhân Sự Tính Lương</span><i class="fa-solid fa-users metric-icon"></i></div>
+        <div class="metric-value val-success">{{ payroll_data|length }}</div>
+    </div>
+    <div class="metric-card">
+        <div class="metric-head"><span class="metric-title">Kỳ Lương Đang Xem</span><i class="fa-solid fa-calendar-days metric-icon"></i></div>
+        <div class="metric-value" style="color: #6366f1;">{{ month }}</div>
+    </div>
+</div>
+
+<div class="panel">
+    <div class="panel-head"><span class="panel-title"><i class="fa-solid fa-filter"></i> Bộ Lọc Kỳ Công</span></div>
+    <div class="panel-body">
+        <form method="GET" action="/admin/payroll" class="filter-grid">
+            <div class="form-group">
+                <label>Kỳ Công / Tháng</label>
+                <input type="month" name="month" class="form-control" value="{{ month }}">
+            </div>
+            <div class="form-group">
+                <label>Phòng Ban</label>
+                <select name="dept_id" class="form-control">
+                    <option value="">Tất cả phòng ban</option>
+                    {% for d in departments %}
+                    <option value="{{ d.id }}" {% if dept_id == d.id|string %}selected{% endif %}>{{ d.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group" style="align-self: flex-end;">
+                <button type="submit" class="btn btn-primary" style="width: 100%;"><i class="fa-solid fa-calculator"></i> Tính Bảng Lương</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="panel">
+    <div class="panel-head">
+        <span class="panel-title"><i class="fa-solid fa-table-list"></i> Chi Tiết Bảng Công &amp; Lương Nhân Viên</span>
+    </div>
+    <div class="table-responsive">
+        <table class="table-custom">
+            <thead>
+                <tr>
+                    <th>Mã NV</th>
+                    <th>Họ và Tên</th>
+                    <th>Phòng Ban</th>
+                    <th>Lương Cơ Bản</th>
+                    <th>Ngày Công</th>
+                    <th>Tổng Giờ</th>
+                    <th>Tăng Ca (h)</th>
+                    <th>Đi Muộn</th>
+                    <th>Thực Nhận (VND)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in payroll_data %}
+                <tr>
+                    <td style="font-family: monospace; font-weight: 700; color: var(--accent);">{{ p.emp_code }}</td>
+                    <td><strong>{{ p.full_name }}</strong></td>
+                    <td>{{ p.dept_name }}</td>
+                    <td style="font-family: monospace;">{{ "{:,.0f}".format(p.base_salary) }}</td>
+                    <td><span class="pill pill-success">{{ p.work_days }} ngày</span></td>
+                    <td style="font-family: monospace;">{{ p.total_work_hours }}h</td>
+                    <td style="font-family: monospace; color: #6366f1;">+{{ p.total_ot_hours }}h</td>
+                    <td>
+                        {% if p.late_count > 0 %}
+                        <span class="pill pill-danger">{{ p.late_count }} lần</span>
+                        {% else %}
+                        <span class="pill pill-success">0</span>
+                        {% endif %}
+                    </td>
+                    <td style="font-family: monospace; font-weight: 700; color: #10b981; font-size: 0.95rem;">
+                        {{ "{:,.0f}".format(p.net_salary) }} đ
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="9" style="text-align: center; color: var(--text-muted); padding: 3rem;">Không tìm thấy dữ liệu tính lương cho kỳ này.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

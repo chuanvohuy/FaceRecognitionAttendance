@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+{% block title %}Lập Lịch Làm Việc & Xếp Ca - FaceCheckIn{% endblock %}
+
+{% block content %}
+<header class="page-header">
+    <div>
+        <h1 class="page-title">Quản Lý Lịch Biểu & Xếp Ca Làm Việc</h1>
+        <p class="page-desc">Phân công ca làm theo nhân sự, phòng ban và phát hiện nhân viên chưa được xếp ca</p>
+    </div>
+    <button type="button" class="btn btn-primary" onclick="openAssignModal()"><i class="fa-solid fa-plus"></i> Phân Ca Mới</button>
+</header>
+
+{% if unassigned_employees %}
+<div class="panel" style="border-left: 4px solid var(--warning); background: #fffbeb;">
+    <div class="panel-head" style="background: transparent; border-bottom: 1px solid rgba(245, 158, 11, 0.2);">
+        <span class="panel-title" style="color: #b45309;"><i class="fa-solid fa-triangle-exclamation"></i> Phát hiện {{ unassigned_employees|length }} nhân viên chưa được xếp ca hôm nay</span>
+    </div>
+    <div class="panel-body" style="padding: 0.85rem 1.25rem;">
+        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            {% for u in unassigned_employees %}
+            <span class="pill pill-warning" style="font-size: 0.8rem;">
+                <strong>{{ u.full_name }}</strong> ({{ u.emp_code }}) - {{ u.dept_name or 'N/A' }}
+            </span>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<div class="panel">
+    <div class="panel-head"><span class="panel-title"><i class="fa-solid fa-filter"></i> Bộ Lọc Lịch Biểu</span></div>
+    <div class="panel-body">
+        <form method="GET" action="/admin/schedules" class="filter-grid">
+            <div class="form-group">
+                <label>Từ ngày</label>
+                <input type="date" name="from_date" class="form-control" value="{{ from_date }}">
+            </div>
+            <div class="form-group">
+                <label>Đến ngày</label>
+                <input type="date" name="to_date" class="form-control" value="{{ to_date }}">
+            </div>
+            <div class="form-group">
+                <label>Phòng ban</label>
+                <select name="dept_id" class="form-control">
+                    <option value="">Tất cả phòng ban</option>
+                    {% for d in departments %}
+                    <option value="{{ d.id }}" {% if dept_id == d.id|string %}selected{% endif %}>{{ d.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group" style="align-self: flex-end;">
+                <button type="submit" class="btn btn-primary" style="width: 100%;"><i class="fa-solid fa-magnifying-glass"></i> Lọc Lịch</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="panel">
+    <div class="panel-head">
+        <span class="panel-title"><i class="fa-solid fa-calendar-check"></i> Danh Sách Phân Ca Làm Việc</span>
+    </div>
+    <div class="table-responsive">
+        <table class="table-custom">
+            <thead>
+                <tr>
+                    <th>Ngày Phân Công</th>
+                    <th>Nhân Sự</th>
+                    <th>Phòng Ban</th>
+                    <th>Ca Làm Việc</th>
+                    <th>Khung Giờ</th>
+                    <th>Ghi Chú</th>
+                    <th>Người Xếp</th>
+                    <th style="text-align: right;">Hành Động</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for s in schedules %}
+                <tr>
+                    <td><strong>{{ s.work_date }}</strong></td>
+                    <td><strong>{{ s.full_name }}</strong> ({{ s.emp_code }})</td>
+                    <td>{{ s.dept_name or 'N/A' }}</td>
+                    <td><span class="badge-type">{{ s.shift_name }}</span></td>
+                    <td style="font-family: monospace;">{{ s.start_time }} - {{ s.end_time }}</td>
+                    <td>{{ s.note or '—' }}</td>
+                    <td><small style="color: var(--text-muted);">{{ s.assigned_by }}</small></td>
+                    <td style="text-align: right;">
+                        <button type="button" class="btn btn-danger" onclick="deleteSchedule({{ s.id }})" title="Xóa phân ca"><i class="fa-solid fa-trash"></i></button>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 3rem;">Chưa có lịch phân ca trong khoảng thời gian này.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div id="assignModal" class="modal-backdrop" style="display: none;">
+    <div class="modal-box">
+        <div class="modal-head">
+            <h3>Phân Công Ca Làm Việc</h3>
+            <button type="button" class="btn btn-subtle" onclick="closeAssignModal()">&times;</button>
+        </div>
+        <form method="POST" action="/admin/schedules">
+            <div class="form-group">
+                <label>Ngày Làm Việc <span class="required">*</span></label>
+                <input type="date" name="work_date" class="form-control" value="{{ from_date }}" required>
+            </div>
+            <div class="form-group">
+                <label>Chọn Ca Làm Việc <span class="required">*</span></label>
+                <select name="shift_id" class="form-control" required>
+                    {% for sh in shifts %}
+                    <option value="{{ sh.id }}">{{ sh.name }} ({{ sh.start_time }} - {{ sh.end_time }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Chọn Nhân Sự Áp Dụng (Chọn nhiều) <span class="required">*</span></label>
+                <select name="emp_ids" class="form-control" multiple size="6" required style="height: auto;">
+                    {% for e in all_employees %}
+                    <option value="{{ e.id }}">{{ e.full_name }} ({{ e.emp_code }})</option>
+                    {% endfor %}
+                </select>
+                <small style="color: var(--text-muted); margin-top: 4px;">Giữ phím Ctrl hoặc kéo để chọn nhiều nhân viên cùng lúc.</small>
+            </div>
+            <div class="form-group">
+                <label>Ghi Chú Phân Ca</label>
+                <input type="text" name="note" class="form-control" placeholder="VD: Ca trực dự án / Đổi ca đột xuất">
+            </div>
+            <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 1.5rem;">
+                <button type="button" class="btn btn-secondary" onclick="closeAssignModal()">Hủy</button>
+                <button type="submit" class="btn btn-primary"><i class="fa-solid fa-check"></i> Lưu Phân Ca</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function openAssignModal() { document.getElementById('assignModal').style.display = 'flex'; }
+    function closeAssignModal() { document.getElementById('assignModal').style.display = 'none'; }
+    async function deleteSchedule(id) {
+        if (confirm('Bạn có chắc chắn muốn xóa ca này?')) {
+            const res = await fetch('/admin/schedules/delete/' + id, { method: 'POST' });
+            const d = await res.json();
+            Swal.fire({ icon: 'success', title: 'Đã xóa', text: d.message, timer: 1200 });
+            setTimeout(() => location.reload(), 1200);
+        }
+    }
+</script>
+{% endblock %}
